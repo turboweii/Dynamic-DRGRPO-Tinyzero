@@ -18,7 +18,7 @@ The best dynamic DR-GRPO variant reaches **0.698** Countdown test score, outperf
 
 Dynamic DR-GRPO achieves the best final score while maintaining a much lower response clipping ratio than the fixed variant. From the training curves, the dynamic variant enters the effective reasoning phase around **step 20**, while Base GRPO shows a similar transition around **step 45**, advancing the reasoning "aha-moment" by roughly **25 steps / 55.6%**.
 
-![Countdown test score comparison](docs/assets/countdown_test_score.png)
+![Countdown test score comparison](https://github.com/turboweii/Dynamic-DRGRPO-Tinyzero/raw/main/docs/assets/countdown_test_score.png)
 
 ## Problem & Motivation
 
@@ -162,11 +162,11 @@ response_length/clip_ratio
 
 The training curves show a clear transition in behavior.
 
-![Critic score and reward curves](docs/assets/critic_score_reward_mean.png)
+![Critic score and reward curves](https://github.com/turboweii/Dynamic-DRGRPO-Tinyzero/raw/main/docs/assets/critic_score_reward_mean.png)
 
-![Actor entropy loss](docs/assets/actor_entropy_loss.png)
+![Actor entropy loss](https://github.com/turboweii/Dynamic-DRGRPO-Tinyzero/raw/main/docs/assets/actor_entropy_loss.png)
 
-![Response length curves](docs/assets/response_length_curves.png)
+![Response length curves](https://github.com/turboweii/Dynamic-DRGRPO-Tinyzero/raw/main/docs/assets/response_length_curves.png)
 
 - Base GRPO improves more slowly and tends to keep longer, less controlled responses.
 - Fixed DR-GRPO improves faster, but response clipping can spike; in the observed run, the clipping ratio peaks around **0.31**.
@@ -265,4 +265,5 @@ python3 -m verl.trainer.main_ppo \
 ## Summary
 
 TinyZero-DRGRPO improves GRPO training on Countdown mathematical reasoning by targeting three core issues: sparse group rewards, invalid group updates, and overlong response instability. The final dynamic DR-GRPO variant reaches **0.698** test score, compared with **0.653** for fixed DR-GRPO and **0.575** for vanilla GRPO. The results show that **DR-GRPO normalization + valid-group dynamic sampling + overlong reward shaping** can substantially improve training efficiency and reasoning stability.
+
 
