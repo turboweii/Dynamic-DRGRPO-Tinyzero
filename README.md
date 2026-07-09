@@ -1,117 +1,135 @@
-# TinyZero
+# Dynamic-DRGRPO-TinyZero
 
-> **⚠️ Deprecation Notice:** This repo is no longer actively maintained. For running RL experiments, please directly use the latest [veRL](https://github.com/volcengine/verl) library.
-> For the archived original documentation, see [OLD_README.md](./OLD_README.md).
+**Dynamic DR-GRPO for Countdown Mathematical Reasoning**
 
-![image](cover.png)
+This repository is a TinyZero / veRL-based reinforcement learning project for the Countdown arithmetic reasoning task. It improves ordinary GRPO with **DR-GRPO advantage estimation**, **response-level loss aggregation**, **dynamic valid-group sampling**, and **overlong reward shaping**.
 
-TinyZero is a reproduction of [DeepSeek R1 Zero](https://github.com/deepseek-ai/DeepSeek-R1) in countdown and multiplication tasks. We built upon [veRL](https://github.com/volcengine/verl).
+The best dynamic DR-GRPO run reaches **0.698** Countdown test score, outperforming fixed DR-GRPO (**0.653**) and vanilla GRPO (**0.575**).
 
-Through RL, the 3B base LM develops self-verification and search abilities all on its own.
+![Countdown test score comparison](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/countdown_test_score.png)
 
-You can experience the Aha moment yourself for < $30.
+## Highlights
 
-Twitter thread: https://x.com/jiayi_pirate/status/1882839370505621655
+- **DR-GRPO advantage estimation**: replaces standard-deviation-normalized GRPO advantages with mean-centered advantages to stabilize sparse binary reward training.
+- **Response-level loss aggregation**: reduces token-count bias from long chain-of-thought responses and makes rollout-level policy gradients more stable.
+- **Dynamic valid-group sampling**: filters out all-correct and all-wrong rollout groups, keeping groups with meaningful within-prompt reward differences.
+- **Overlong reward shaping**: applies a soft length penalty after a safe response length to suppress unproductive overlong reasoning.
+- **Aha-moment behavior**: the dynamic variant enters the effective reasoning phase earlier, showing candidate enumeration, step-by-step self-verification, error recognition, and strategy switching.
 
-Full experiment log: https://wandb.ai/jiayipan/TinyZero
+## Key Results
 
-> 📢: We release [Adaptive Parallel Reasoning](https://github.com/Parallel-Reasoning/APR), where we explore a new dimension in scaling reasoning models.
+| Method | Countdown Test Score | Delta vs Base GRPO |
+|---|---:|---:|
+| Base GRPO | 0.575 | - |
+| Fixed DR-GRPO | 0.653 | +13.6% |
+| Dynamic DR-GRPO | 0.698 | +21.5% |
 
-## Installation
+Dynamic DR-GRPO reaches the best final score and keeps response clipping much lower than the fixed variant. In the observed training curves, Dynamic DR-GRPO enters the effective reasoning phase around **step 20**, while Base GRPO shows a similar transition around **step 45**, advancing the reasoning transition by about **25 steps / 55.6%**.
 
+## Training Curves
+
+![Critic score and reward curves](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/critic_score_reward_mean.png)
+
+![Actor entropy loss](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/actor_entropy_loss.png)
+
+![Response length curves](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/response_length_curves.png)
+
+## Qualitative Aha-Moment Example
+
+The following rollout shows explicit self-correction behavior. The model enumerates candidate equations, verifies intermediate results, recognizes failed attempts, switches strategy, and finally discovers a valid solution. This is the kind of self-improving reasoning behavior described as an **aha moment** in R1-Zero-style training.
+
+![Qualitative aha-moment example](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/aha_moment_example.jpg)
+
+## Method Overview
+
+### DR-GRPO Advantage
+
+Vanilla GRPO uses group standard deviation normalization:
+
+```text
+advantage = (reward - group_mean) / group_std
 ```
-conda create -n zero python=3.9
-# install torch [or you can skip this step and let vllm install the correct version for you]
-pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
-# install vllm
-pip3 install vllm==0.6.3 # or you can install 0.5.4, 0.4.2 and 0.3.1
-pip3 install ray
 
-# verl
-pip install -e .
+This project adds a DR-GRPO mode:
 
-# flash attention 2
-pip3 install flash-attn --no-build-isolation
-# quality of life
-pip install wandb IPython matplotlib
+```text
+advantage = reward - group_mean
 ```
 
-## Countdown task
+This keeps the group-relative learning signal while avoiding unstable scaling when rewards are sparse or nearly binary.
 
-**Data Preparation**
+### Dynamic Valid-Group Sampling
+
+Dynamic sampling improves update efficiency by generating more candidate groups and keeping only groups that contain both successful and failed rollouts. All-correct and all-wrong groups are dropped because they provide weak relative advantage signals.
+
+### Overlong Reward Shaping
+
+A soft overlong penalty is applied after a safe length:
+
+```yaml
+algorithm.overlong_reward.enable=True
+algorithm.overlong_reward.safe_length=896
+algorithm.overlong_reward.max_length=1024
+algorithm.overlong_reward.max_penalty=0.5
 ```
-conda activate zero
-python ./examples/data_preprocess/countdown.py --local_dir {path_to_your_dataset}
+
+This discourages clipped, unproductive long reasoning traces while preserving useful longer reasoning when needed.
+
+## Detailed Report
+
+See the full report here:
+
+- [TINYZERO_DRGRPO_REPORT.md](./TINYZERO_DRGRPO_REPORT.md)
+
+## Important Files
+
+```text
+scripts/train_tiny_zero.sh              # Fixed DR-GRPO + overlong training launcher
+examples/data_preprocess/countdown.py   # Countdown dataset preprocessing
+verl/trainer/ppo/core_algos.py          # GRPO / DR-GRPO advantage and loss aggregation
+verl/trainer/ppo/ray_trainer.py         # Dynamic sampling and overlong reward shaping
+verl/workers/actor/dp_actor.py          # Actor policy loss aggregation
+verl/utils/reward_score/countdown.py    # Countdown reward function
 ```
 
-### Run Training
+Note: `scripts/train_tiny_zero.sh` is the fixed DR-GRPO launcher. The dynamic sampling module is implemented in the trainer and can be enabled through Hydra / command-line overrides.
+
+## Quick Start
+
+### Prepare Countdown Data
+
+```bash
+python examples/data_preprocess/countdown.py \
+  --template_type=qwen-instruct \
+  --local_dir=$DATA_DIR
 ```
-conda activate zero
-```
 
-For the following code, if you see out-of-VRAM, try adding `critic.model.enable_gradient_checkpointing=True` to the script, and check out the discussion [here](https://github.com/Jiayi-Pan/TinyZero/issues/5#issuecomment-2624161643).
+### Run Fixed DR-GRPO
 
-**Single GPU**
-
-
-Works for model <= 1.5B. For Qwen2.5-0.5B base, we know it fails to learn reasoning.
-
-```
+```bash
+export BASE_MODEL=/path/to/Qwen2.5-3B
+export DATA_DIR=/path/to/countdown
+export EXPERIMENT_NAME=countdown-qwen2.5-3b-drgrpo-fixed
+export CHECKPOINT_DIR=/path/to/checkpoints
 export N_GPUS=1
-export BASE_MODEL={path_to_your_model}
-export DATA_DIR={path_to_your_dataset}
 export ROLLOUT_TP_SIZE=1
-export EXPERIMENT_NAME=countdown-qwen2.5-0.5b
-export VLLM_ATTENTION_BACKEND=XFORMERS
 
-bash ./scripts/train_tiny_zero.sh
+bash scripts/train_tiny_zero.sh
 ```
 
-**3B+ model**
-In this case, the base model is able to develop sophisticated reasoning skills.
-```
-export N_GPUS=2
-export BASE_MODEL={path_to_your_model}
-export DATA_DIR={path_to_your_dataset}
-export ROLLOUT_TP_SIZE=2
-export EXPERIMENT_NAME=countdown-qwen2.5-3b
-export VLLM_ATTENTION_BACKEND=XFORMERS
+### Enable Dynamic Sampling
 
-bash ./scripts/train_tiny_zero.sh
-```
-
-### Instruct Ablation
-We experiment with Qwen-2.5-3B Instruct too.
-**Data Preparation**
-To follow chat template, we need to reprocess the data:
-```
-conda activate zero
-python examples/data_preprocess/countdown.py --template_type=qwen-instruct --local_dir={path_to_your_dataset}
-```
-
-**Training**
-```
-export N_GPUS=2
-export BASE_MODEL={path_to_your_model}
-export DATA_DIR={path_to_your_dataset}
-export ROLLOUT_TP_SIZE=2
-export EXPERIMENT_NAME=countdown-qwen2.5-3b-instruct
-export VLLM_ATTENTION_BACKEND=XFORMERS
-
-bash ./scripts/train_tiny_zero.sh
+```bash
+python3 -m verl.trainer.main_ppo \
+  algorithm.adv_estimator=drgrpo \
+  algorithm.dynamic_sampling.enable=True \
+  algorithm.dynamic_sampling.generation_batch_size=256 \
+  algorithm.overlong_reward.enable=True \
+  actor_rollout_ref.actor.loss_agg_mode=drgrpo \
+  actor_rollout_ref.actor.clip_ratio_high=0.2 \
+  ...
 ```
 
 ## Acknowledgements
-* We run our experiments based on [veRL](https://github.com/volcengine/verl).
-* We use Qwen2.5 series base model [Qwen2.5](https://github.com/QwenLM/Qwen2.5).
 
-## Citation
-```
-@misc{tinyzero,
-author       = {Jiayi Pan and Junjie Zhang and Xingyao Wang and Lifan Yuan and Hao Peng and Alane Suhr},
-title        = {TinyZero},
-howpublished = {https://github.com/Jiayi-Pan/TinyZero},
-note         = {Accessed: 2025-01-24},
-year         = {2025}
-}
-```
+This project builds on [TinyZero](https://github.com/Jiayi-Pan/TinyZero) and [veRL](https://github.com/volcengine/verl).
