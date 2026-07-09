@@ -18,7 +18,7 @@ The best dynamic DR-GRPO variant reaches **0.698** Countdown test score, outperf
 
 Dynamic DR-GRPO achieves the best final score while maintaining a much lower response clipping ratio than the fixed variant. From the training curves, the dynamic variant enters the effective reasoning phase around **step 20**, while Base GRPO shows a similar transition around **step 45**, advancing the reasoning "aha-moment" by roughly **25 steps / 55.6%**.
 
-![Countdown test score comparison](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/countdown_test_score.png)
+![Countdown test score comparison](docs/assets/countdown_test_score.png)
 
 ## Problem & Motivation
 
@@ -162,11 +162,11 @@ response_length/clip_ratio
 
 The training curves show a clear transition in behavior.
 
-![Critic score and reward curves](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/critic_score_reward_mean.png)
+![Critic score and reward curves](docs/assets/critic_score_reward_mean.png)
 
-![Actor entropy loss](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/actor_entropy_loss.png)
+![Actor entropy loss](docs/assets/actor_entropy_loss.png)
 
-![Response length curves](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/response_length_curves.png)
+![Response length curves](docs/assets/response_length_curves.png)
 
 - Base GRPO improves more slowly and tends to keep longer, less controlled responses.
 - Fixed DR-GRPO improves faster, but response clipping can spike; in the observed run, the clipping ratio peaks around **0.31**.
@@ -184,7 +184,7 @@ This explains why dynamic DR-GRPO shows an earlier reasoning "aha-moment" than B
 
 The following rollout shows an explicit self-correction pattern. The model enumerates multiple candidate equations, checks each intermediate result against the target, recognizes failed attempts, switches strategy, and finally discovers a valid solution. This behavior is consistent with the "aha moment" discussed in R1-Zero-style reasoning: the model does not simply output an answer, but performs candidate search, step-by-step self-verification, error identification, and strategy switching before producing the final equation.
 
-![Qualitative aha-moment example](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/aha_moment_example.jpg)
+![Qualitative aha-moment example](docs/assets/aha_moment_example.jpg)
 
 ## Technical Highlights
 

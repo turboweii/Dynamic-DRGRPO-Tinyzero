@@ -6,7 +6,7 @@ This repository is a TinyZero / veRL-based reinforcement learning project for th
 
 The best dynamic DR-GRPO run reaches **0.698** Countdown test score, outperforming fixed DR-GRPO (**0.653**) and vanilla GRPO (**0.575**).
 
-![Countdown test score comparison](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/countdown_test_score.png)
+![Countdown test score comparison](docs/assets/countdown_test_score.png)
 
 ## Highlights
 
@@ -28,17 +28,17 @@ Dynamic DR-GRPO reaches the best final score and keeps response clipping much lo
 
 ## Training Curves
 
-![Critic score and reward curves](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/critic_score_reward_mean.png)
+![Critic score and reward curves](docs/assets/critic_score_reward_mean.png)
 
-![Actor entropy loss](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/actor_entropy_loss.png)
+![Actor entropy loss](docs/assets/actor_entropy_loss.png)
 
-![Response length curves](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/response_length_curves.png)
+![Response length curves](docs/assets/response_length_curves.png)
 
 ## Qualitative Aha-Moment Example
 
 The following rollout shows explicit self-correction behavior. The model enumerates candidate equations, verifies intermediate results, recognizes failed attempts, switches strategy, and finally discovers a valid solution. This is the kind of self-improving reasoning behavior described as an **aha moment** in R1-Zero-style training.
 
-![Qualitative aha-moment example](https://raw.githubusercontent.com/turboweii/Dynamic-DRGRPO-Tinyzero/main/docs/assets/aha_moment_example.jpg)
+![Qualitative aha-moment example](docs/assets/aha_moment_example.jpg)
 
 ## Method Overview
 
